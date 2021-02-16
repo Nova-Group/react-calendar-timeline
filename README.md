@@ -1,3 +1,9 @@
+# Note
+
+This repository is a fork of [namespace-ee/react-calendar-timeline](https://github.com/namespace-ee/react-calendar-timeline)
+
+Features, documentation and tests here may be significantly out of date compared to the forked from repository. Check forked from repository before using this.
+
 # React Calendar Timeline
 
 A modern and responsive react timeline component.
@@ -83,6 +89,8 @@ Expects either a vanilla JS array or an immutableJS array, consisting of objects
   id: 1,
   title: 'group 1',
   rightTitle: 'title in the right sidebar',
+  stackItems?: true,
+  height?: 30
 }
 ```
 
@@ -233,7 +241,7 @@ Append a special `.rct-drag-right` handle to the elements and only resize if dra
 
 ### stackItems
 
-Stack items under each other, so there is no visual overlap when times collide. Defaults to `false`.
+Stack items under each other, so there is no visual overlap when times collide.  Can be overridden in the `groups` array. Defaults to `false`.
 
 ## traditionalZoom
 
@@ -264,39 +272,39 @@ Default:
 
 Ref callback that gets a DOM reference to the scroll body element. Can be useful to programmatically scroll.
 
-## onItemMove(itemId, dragTime, newGroupOrder)
+## onItemMove(itemId, dragTime, newGroupOrder, item, group, previousGroup)
 
-Callback when an item is moved. Returns 1) the item's ID, 2) the new start time and 3) the index of the new group in the `groups` array.
+Callback when an item is moved. Returns 1) the item's ID, 2) the new start time and 3) the index of the new group in the `groups` array 4) the item
 
-## onItemResize(itemId, time, edge)
+## onItemResize(itemId, time, edge, item)
 
-Callback when an item is resized. Returns 1) the item's ID, 2) the new start or end time of the item 3) The edge that was dragged (`left` or `right`)
+Callback when an item is resized. Returns 1) the item's ID, 2) the new start or end time of the item 3) The edge that was dragged (`left` or `right`) 4) The item
 
-## onItemSelect(itemId, e, time)
+## onItemSelect(itemId, e, time, item)
 
 Called when an item is selected. This is sent on the first click on an item. `time` is the time that corresponds to where you click/select on the item in the timeline.
 
-## onItemClick(itemId, e, time)
+## onItemClick(itemId, e, time, item)
 
 Called when an item is clicked. Note: the item must be selected before it's clicked... except if it's a touch event and `itemTouchSendsClick` is enabled. `time` is the time that corresponds to where you click on the item in the timeline.
 
-## onItemDoubleClick(itemId, e, time)
+## onItemDoubleClick(itemId, e, time, item)
 
 Called when an item was double clicked. `time` is the time that corresponds to where you double click on the item in the timeline.
 
-## onItemContextMenu(itemId, e, time)
+## onItemContextMenu(itemId, e, time, item)
 
 Called when the item is clicked by the right button of the mouse. `time` is the time that corresponds to where you context click on the item in the timeline. Note: If this property is set the default context menu doesn't appear.
 
-## onCanvasClick(groupId, time, e)
+## onCanvasClick(groupId, time, e, group)
 
 Called when an empty spot on the canvas was clicked. Get the group ID and the time as arguments. For example open a "new item" window after this.
 
-## onCanvasDoubleClick(group, time, e)
+## onCanvasDoubleClick(groupId, time, e, group)
 
 Called when an empty spot on the canvas was double clicked. Get the group and the time as arguments.
 
-## onCanvasContextMenu(group, time, e)
+## onCanvasContextMenu(groupId, time, e, group)
 
 Called when the canvas is clicked by the right button of the mouse. Note: If this property is set the default context menu doesn't appear
 
@@ -304,7 +312,7 @@ Called when the canvas is clicked by the right button of the mouse. Note: If thi
 
 Called when the timeline is zoomed, either via mouse/pinch zoom or clicking header to change timeline units
 
-## moveResizeValidator(action, itemId, time, resizeEdge)
+## moveResizeValidator(action, item, time, resizeEdge, newGroup, originalGroup)
 
 This function is called when an item is being moved or resized. It's up to this function to return a new version of `change`, when the proposed move would violate business logic.
 
@@ -430,6 +438,14 @@ function (visibleTimeStart, visibleTimeEnd, updateScrollCanvas) {
 
 Called when the bounds in the calendar's canvas change. Use it for example to load new data to display. (see "Behind the scenes" below). `canvasTimeStart` and `canvasTimeEnd` are unix timestamps in milliseconds.
 
+## canvasBuffer
+
+The number of extra widths the canvas will be. Increasing this limit will allow for more scrolling before onBoundsChange is called, but will cause each onBoundsChange to take more time. The canvasBuffer is the number of additional widths on each side of the current canvas. Calculated as `2*canvasBuffer+1`
+
+Changing `canvasBuffer` will be applied the next time the canvas is redrawn.
+
+Default: 1
+
 ## itemRenderer
 
 Render prop function used to render a customized item. The function provides multiple paramerters that can be used to render each item.
@@ -511,16 +527,20 @@ Rather than applying props on the element yourself and to avoid your props being
 * `getResizeProps` returns the props you should apply to the left and right resize handlers only if `useResizeHandle` set to true. The returned object has the props for the left element under property `left` and the props to be applied to the right element under `right` :
 
   * left
-    * ref: function to get element referance
+    * ref: function to get element reference
     * style: style to be applied to the left element
+    * className: class names to be applied to left className
   * right
-    * ref: function to get element referance
+    * ref: function to get element reference
     * style: style to be applied to the right element
+    * className: class names to be applied to left className
 
-These properties can be override using the prop argument with proprties:
+These properties can be override using the prop argument with properties:
 
 * leftStyle: style to be added to left style
 * rightStyle: style to be added to right style
+* leftClassName: classes to be added to left handler
+* rightClassName: classes to be added to right handler
 
 example
 
@@ -791,13 +811,13 @@ rightSidebarWidth={150}
 rightSidebarContent={<p>Second filter</p>}
 ```
 
-And add `right_sidebar` prop to the groups objects:
+And add `rightTitle` prop to the groups objects:
 
 ```js
 {
   id: 1,
   title: 'group 1',
-  right_sidebar: 'additional info about group 1'
+  rightTitle: 'additional info about group 1'
 }
 ```
 
@@ -889,7 +909,7 @@ The pinch gesture on a trackpad (not a touch device) works in Chrome and Firefox
 If you like to improve React Calendar Timeline fork the repo and get started by running the following:
 
 ```bash
-$ git clone https://github.com/namespace-ee/react-calendar-timeline.git react-calendar-timeline
+$ git clone https://github.com/Nova-Group/react-calendar-timeline.git react-calendar-timeline
 $ cd react-calendar-timeline
 $ yarn
 $ yarn start

@@ -22,6 +22,10 @@ class ScrollElement extends Component {
     }
   }
 
+  componentDidMount(){
+    this.scrollComponent.addEventListener('wheel', this.handleWheel, {passive:false})
+  }
+
   refHandler = el => {
     this.scrollComponent = el
     this.props.scrollRef(el)
@@ -33,12 +37,9 @@ class ScrollElement extends Component {
   }
 
   handleWheel = e => {
-    const { traditionalZoom } = this.props
-
-    e.preventDefault()
-
     // zoom in the time dimension
     if (e.ctrlKey || e.metaKey || e.altKey) {
+      e.preventDefault()
       const parentPosition = getParentPosition(e.currentTarget)
       const xPosition = e.clientX - parentPosition.x
 
@@ -47,25 +48,11 @@ class ScrollElement extends Component {
       // convert vertical zoom to horiziontal
       this.props.onWheelZoom(speed, xPosition, e.deltaY)
     } else if (e.shiftKey) {
+      e.preventDefault()
       // shift+scroll event from a touchpad has deltaY property populated; shift+scroll event from a mouse has deltaX
       this.scrollComponent.scrollLeft += e.deltaY || e.deltaX
 
       // no modifier pressed? we prevented the default event, so scroll or zoom as needed
-    } else {
-      if (e.deltaX !== 0) {
-        if (!traditionalZoom) {
-          this.scrollComponent.scrollLeft += e.deltaX
-        }
-      }
-      if (e.deltaY !== 0) {
-        window.scrollTo(window.pageXOffset, window.pageYOffset + e.deltaY)
-        if (traditionalZoom) {
-          const parentPosition = getParentPosition(e.currentTarget)
-          const xPosition = e.clientX - parentPosition.x
-
-          this.props.onWheelZoom(10, xPosition, e.deltaY)
-        }
-      }
     }
   }
 
@@ -104,6 +91,12 @@ class ScrollElement extends Component {
     this.setState({
       isDragging: false
     })
+  }
+
+
+  handleDragStart = e => {
+    // RA 04/04/2019 holding the mouse down sometimes caused a drag even to start instead of a pan
+    e.preventDefault();
   }
 
   handleTouchStart = e => {
@@ -193,7 +186,6 @@ class ScrollElement extends Component {
         className="rct-scroll"
         style={scrollComponentStyle}
         onScroll={this.handleScroll}
-        onWheel={this.handleWheel}
         onMouseDown={this.handleMouseDown}
         onMouseMove={this.handleMouseMove}
         onMouseUp={this.handleMouseUp}
@@ -201,6 +193,7 @@ class ScrollElement extends Component {
         onTouchStart={this.handleTouchStart}
         onTouchMove={this.handleTouchMove}
         onTouchEnd={this.handleTouchEnd}
+        onDragStart={this.handleDragStart}
       >
         {children}
       </div>

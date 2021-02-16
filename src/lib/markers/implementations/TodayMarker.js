@@ -48,6 +48,10 @@ class TodayMarker extends React.Component {
     clearInterval(this.intervalToken)
   }
 
+  shouldComponentUpdate(nextProps, nextState){
+    return (nextState.date !== this.state.date || nextProps.leftOffset !== this.props.leftOffset)
+  }
+
   render() {
     const { date } = this.state
     const leftOffset = this.props.getLeftOffsetFromDate(date)

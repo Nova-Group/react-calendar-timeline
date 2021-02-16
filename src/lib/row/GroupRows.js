@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types'
 import React, { Component } from 'react'
 import GroupRow from './GroupRow'
+import { arraysEqual } from '../utility/generic';
 
 export default class GroupRows extends Component {
   static propTypes = {
@@ -13,21 +14,24 @@ export default class GroupRows extends Component {
     groups: PropTypes.array.isRequired,
     horizontalLineClassNamesForGroup: PropTypes.func,
     onRowContextClick: PropTypes.func.isRequired,
+    newGroupOrder: PropTypes.number
   }
 
   shouldComponentUpdate(nextProps) {
+    this.lastGroupOrder = this.props.newGroupOrder
     return !(
+      nextProps.newGroupOrder === this.props.newGroupOrder &&
       nextProps.canvasWidth === this.props.canvasWidth &&
       nextProps.lineCount === this.props.lineCount &&
-      nextProps.groupHeights === this.props.groupHeights &&
-      nextProps.groups === this.props.groups
+      nextProps.groups === this.props.groups &&
+      nextProps.groupHeights[this.props.newGroupOrder] === this.props.groupHeights[this.props.newGroupOrder] &&
+      arraysEqual(nextProps.groupHeights, this.props.groupHeights)
     )
   }
 
   render() {
     const {
       canvasWidth,
-      lineCount,
       groupHeights,
       onRowClick,
       onRowDoubleClick,
@@ -36,27 +40,22 @@ export default class GroupRows extends Component {
       horizontalLineClassNamesForGroup,
       onRowContextClick,
     } = this.props
-    let lines = []
 
-    for (let i = 0; i < lineCount; i++) {
-      lines.push(
-        <GroupRow
-          clickTolerance={clickTolerance}
-          onContextMenu={evt => onRowContextClick(evt, i)}
-          onClick={evt => onRowClick(evt, i)}
-          onDoubleClick={evt => onRowDoubleClick(evt, i)}
-          key={`horizontal-line-${i}`}
-          isEvenRow={i % 2 === 0}
-          group={groups[i]}
-          horizontalLineClassNamesForGroup={horizontalLineClassNamesForGroup}
-          style={{
-            width: `${canvasWidth}px`,
-            height: `${groupHeights[i] - 1}px`
-          }}
-        />
-      )
-    }
-
-    return <div className="rct-horizontal-lines">{lines}</div>
+    return <div className="rct-horizontal-lines">{groups.map((group, i) => {
+      return (<GroupRow
+        clickTolerance={clickTolerance}
+        onContextMenu={evt => onRowContextClick(evt, i, group)}
+        onClick={evt => onRowClick(evt, i, group)}
+        onDoubleClick={evt => onRowDoubleClick(evt, i, group)}
+        key={`horizontal-line-${group.id}`}
+        isEvenRow={i % 2 === 0}
+        group={group}
+        horizontalLineClassNamesForGroup={horizontalLineClassNamesForGroup}
+        style={{
+          width: canvasWidth,
+          height: groupHeights[i] - 1
+        }}
+      />)
+    })}</div>
   }
 }

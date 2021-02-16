@@ -42,6 +42,10 @@ class TodayMarker extends React.Component {
     }
   }
 
+  shouldComponentUpdate(){
+    return false
+  }
+
   render() {
     return null
   }

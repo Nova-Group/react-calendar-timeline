@@ -64,7 +64,7 @@ export function iterateTimes(start, end, unit, timeSteps, callback) {
 
   if (timeSteps[unit] && timeSteps[unit] > 1) {
     let value = time.get(unit)
-    time.set(unit, value - value % timeSteps[unit])
+    time.set(unit, value - (value % timeSteps[unit]))
   }
 
   while (time.valueOf() < end) {
@@ -174,13 +174,21 @@ export function calculateDimensions({
   const itemTimeRange = itemEnd - itemStart
 
   let newItemStart = isDragging ? dragTime : itemStart
+  const newItemEnd = newItemStart + itemTimeRange
+
+  // This item is not visible
+  if (!(newItemStart <= canvasTimeEnd &&
+    newItemEnd >= canvasTimeStart)) {
+    return
+  }
+
 
   const ratio =
     1 / coordinateToTimeRatio(canvasTimeStart, canvasTimeEnd, canvasWidth)
 
   // restrict startTime and endTime to be bounded by canvasTimeStart and canasTimeEnd
-  const effectiveStartTime = Math.max(itemStart, canvasTimeStart)
-  const effectiveEndTime = Math.min(itemEnd, canvasTimeEnd)
+  const effectiveStartTime = Math.max(newItemStart, canvasTimeStart)
+  const effectiveEndTime = Math.min(newItemEnd, canvasTimeEnd)
   const itemWidth = (effectiveEndTime - effectiveStartTime) * ratio
 
   const dimensions = {
@@ -193,44 +201,53 @@ export function calculateDimensions({
   return dimensions
 }
 
+/**
+ * Get the order of groups based on their keys
+ * @param {*} groups array of groups
+ * @param {*} keys the keys object
+ * @returns Ordered hash of objects with their array index and group
+ */
 export function getGroupOrders(groups, keys) {
   const { groupIdKey } = keys
 
   let groupOrders = {}
 
   for (let i = 0; i < groups.length; i++) {
-    groupOrders[_get(groups[i], groupIdKey)] = i
+    groupOrders[_get(groups[i], groupIdKey)] = { index: i, group: groups[i] } 
   }
 
   return groupOrders
 }
 
-export function getGroupedItems(items, groupOrders) {
-  var arr = []
-
-  // Initialize with empty arrays for each group
-  for (let i = 0; i < Object.keys(groupOrders).length; i++) {
-    arr[i] = []
-  }
-  // Populate groups
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].dimensions.order !== undefined) {
-      arr[items[i].dimensions.order].push(items[i])
+/**
+ * Adds items relevant to each group to the result of getGroupOrders
+ * @param {*} items list of all items
+ * @param {*} groupOrders the result of getGroupOrders
+ */
+function getGroupedItems(items, groupOrders) {
+  var groupedItems = {}
+  var keys = Object.keys(groupOrders)
+  // Initialize with result object for each group
+  for (let i = 0; i < keys.length; i++) {
+    const groupOrder = groupOrders[keys[i]]
+    groupedItems[i] = {
+      index: groupOrder.index,
+      group: groupOrder.group,
+      items: []
     }
   }
 
-  return arr
-}
+  // Populate groups
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].dimensions.order !== undefined) {
+      const groupItem = groupedItems[items[i].dimensions.order.index]
+      if (groupItem) {
+        groupItem.items.push(items[i])
+      }
+    }
+  }
 
-export function getVisibleItems(items, canvasTimeStart, canvasTimeEnd, keys) {
-  const { itemTimeStartKey, itemTimeEndKey } = keys
-
-  return items.filter(item => {
-    return (
-      _get(item, itemTimeStartKey) <= canvasTimeEnd &&
-      _get(item, itemTimeEndKey) >= canvasTimeStart
-    )
-  })
+  return groupedItems
 }
 
 const EPSILON = 0.001
@@ -247,9 +264,66 @@ export function collision(a, b, lineHeight, collisionPadding = EPSILON) {
   )
 }
 
-export function stack(items, groupOrders, lineHeight, groups) {
+/**
+ * Calculate the position of a given item for a group that
+ * is being stacked
+ */
+function groupStack(lineHeight, item, group, groupHeight, totalHeight, i) {
+  // calculate non-overlapping positions
+  let curHeight = groupHeight
+  let verticalMargin = 0//lineHeight - item.dimensions.height
+  if (item.dimensions.stack && item.dimensions.top === null) {
+    item.dimensions.top = totalHeight + verticalMargin + (lineHeight - item.dimensions.height) / 2
+    curHeight = Math.max(curHeight, lineHeight)
+    do {
+      var collidingItem = null
+      //Items are placed from i=0 onwards, only check items with index < i
+      for (var j = i-1, jj = 0; j >= jj; j--) {
+        var other = group[j]
+        if (
+          other.dimensions.top !== null &&
+          other.dimensions.stack &&
+          collision(item.dimensions, other.dimensions, lineHeight)
+        ) {
+          collidingItem = other
+          break
+        } else {
+          // console.log('dont test', other.top !== null, other !== item, other.stack);
+        }
+      }
+
+      if (collidingItem != null) {
+        // There is a collision. Reposition the items above the colliding element
+        item.dimensions.top = collidingItem.dimensions.top + lineHeight - (lineHeight - item.dimensions.height) / 2
+        curHeight = Math.max(
+          curHeight,
+          item.dimensions.top + item.dimensions.height - totalHeight +  (lineHeight - item.dimensions.height) / 2
+        )
+      }
+    } while (collidingItem)
+  }
+  return {groupHeight: curHeight, verticalMargin}
+}
+
+// Calculate the position of this item for a group that is not being stacked
+function groupNoStack(lineHeight, item, groupHeight, totalHeight) {
+  let verticalMargin = (lineHeight - item.dimensions.height) / 2
+  if (item.dimensions.top === null) {
+    item.dimensions.top = totalHeight + verticalMargin
+    groupHeight = Math.max(groupHeight, lineHeight)
+  }
+  return {groupHeight, verticalMargin: 0}
+}
+
+/**
+ * Stack all groups
+ * @param {*} items items to be stacked
+ * @param {*} groupOrders the groupOrders object
+ * @param {*} lineHeight 
+ * @param {*} stackItems should items be stacked?
+ */
+export function stackAll(items, groupOrders, lineHeight, stackItems) {
   var i, iMax
-  var k = 0
   var totalHeight = 0
 
   var groupHeights = []
@@ -257,100 +331,38 @@ export function stack(items, groupOrders, lineHeight, groups) {
 
   var groupedItems = getGroupedItems(items, groupOrders)
 
-  groupedItems.forEach(function(group) {
-    var groupVal = groups[k++];
-
-    // calculate new, non-overlapping positions
+  for (var index in groupedItems) {
+    const groupItems = groupedItems[index]
+    const {items, group} = groupItems
     groupTops.push(totalHeight)
-
+  
+    // Is group being stacked?
+    const isGroupStacked = group.stackItems !== undefined ? group.stackItems : stackItems
     var groupHeight = 0
     var verticalMargin = 0
-    for (i = 0, iMax = group.length; i < iMax; i++) {
-      var item = group[i]
-      verticalMargin = lineHeight - item.dimensions.height
-
-      if (item.dimensions.stack && item.dimensions.top === null) {
-        item.dimensions.top = totalHeight + verticalMargin
-        groupHeight = Math.max(groupHeight, lineHeight)
-        do {
-          var collidingItem = null
-          for (var j = 0, jj = group.length; j < jj; j++) {
-            var other = group[j]
-            if (
-              other.dimensions.top !== null &&
-              other !== item &&
-              other.dimensions.stack &&
-              collision(item.dimensions, other.dimensions, lineHeight)
-            ) {
-              collidingItem = other
-              break
-            } else {
-              // console.log('dont test', other.top !== null, other !== item, other.stack);
-            }
-          }
-
-          if (collidingItem != null) {
-            // There is a collision. Reposition the items above the colliding element
-            item.dimensions.top = collidingItem.dimensions.top + lineHeight
-            groupHeight = Math.max(
-              groupHeight,
-              item.dimensions.top + item.dimensions.height - totalHeight
-            )
-          }
-        } while (collidingItem)
+    // Find positions for each item in group
+    for (i = 0, iMax = items.length; i < iMax; i++) {
+      let r = {}
+      if (isGroupStacked) {
+        r = groupStack(lineHeight, items[i], items, groupHeight, totalHeight, i)
+      } else {
+        r = groupNoStack(lineHeight, items[i], groupHeight, totalHeight)
       }
+      groupHeight = r.groupHeight
+      verticalMargin = r.verticalMargin
+
     }
 
-    if (groupVal.height) {
-      groupHeights.push(groupVal.height)
-      totalHeight += groupVal.height
+    // If group height is overridden, push new height
+    // Do this late as item position still needs to be calculated
+    if (group.height) {
+      groupHeights.push(group.height)
+      totalHeight += group.height
     } else {
       groupHeights.push(Math.max(groupHeight + verticalMargin, lineHeight))
       totalHeight += Math.max(groupHeight + verticalMargin, lineHeight)
     }
-  })
-  return {
-    height: totalHeight,
-    groupHeights,
-    groupTops
   }
-}
-
-export function nostack(items, groupOrders, lineHeight, groups) {
-  var i, j=0, iMax
-
-  var totalHeight = 0
-
-  var groupHeights = []
-  var groupTops = []
-
-  var groupedItems = getGroupedItems(items, groupOrders)
-
-  groupedItems.forEach(function(group) {
-    var groupVal = groups[j++];
-
-    // calculate new, non-overlapping positions
-    groupTops.push(totalHeight)
-
-    var groupHeight = 0
-    for (i = 0, iMax = group.length; i < iMax; i++) {
-      var item = group[i]
-      var verticalMargin = (lineHeight - item.dimensions.height) / 2
-
-      if (item.dimensions.top === null) {
-        item.dimensions.top = totalHeight + verticalMargin
-        groupHeight = Math.max(groupHeight, lineHeight)
-      }
-    }
-
-    if (groupVal.height) {
-      groupHeights.push(groupVal.height);
-      totalHeight += groupVal.height;
-    } else {
-      groupHeights.push(Math.max(groupHeight, lineHeight))
-      totalHeight += Math.max(groupHeight, lineHeight)
-    }
-  })
   return {
     height: totalHeight,
     groupHeights,
@@ -361,24 +373,24 @@ export function nostack(items, groupOrders, lineHeight, groups) {
 /**
  * Stack the items that will be visible
  * within the canvas area
- * @param {item[]} items 
- * @param {group[]} groups 
- * @param {number} canvasTimeStart 
- * @param {number} visibleTimeStart 
- * @param {number} visibleTimeEnd 
- * @param {number} width 
- * @param {*} props 
- * @param {*} state 
+ * @param {item[]} items
+ * @param {group[]} groups
+ * @param {number} canvasTimeStart
+ * @param {number} visibleTimeStart
+ * @param {number} visibleTimeEnd
+ * @param {number} width
+ * @param {*} props
+ * @param {*} state
  */
 export function stackItems(
-items,
-groups,
-canvasTimeStart,
-visibleTimeStart,
-visibleTimeEnd,
-width,
-props,
-state
+  items,
+  groups,
+  canvasTimeStart,
+  visibleTimeStart,
+  visibleTimeEnd,
+  width,
+  props,
+  state
 ) {
   // if there are no groups return an empty array of dimensions
   if (groups.length === 0) {
@@ -397,32 +409,25 @@ state
     resizingItem,
     resizingEdge,
     resizeTime,
-    newGroupOrder
+    newGroupOrder,
+    canvasBuffer
   } = state
   const zoom = visibleTimeEnd - visibleTimeStart
-  const canvasTimeEnd = canvasTimeStart + zoom * 3
-  const canvasWidth = width * 3
-
-  // Find items that fit within canvasTimeStart and canvasTimeEnd
-  // this is used when calculating the number of 'lines' each group
-  // will use.
-  const visibleItems = getVisibleItems(
-    items,
-    canvasTimeStart,
-    canvasTimeEnd,
-    keys
-  )
+  const canvasTimeEnd = canvasTimeStart + zoom * canvasBuffer
+  const canvasWidth = width * canvasBuffer
 
   // Get the order of groups based on their id key
   const groupOrders = getGroupOrders(groups, keys)
 
-
-  let dimensionItems = visibleItems.reduce((memo, item) => {
+  let dimensionItems = []
+  items.forEach(item => {
     const itemId = _get(item, keys.itemIdKey)
     const isDragging = itemId === draggingItem
     const isResizing = itemId === resizingItem
 
-
+    if (!groupOrders[_get(item, keys.itemGroupKey)]) {
+      return;
+    }
     let dimension = calculateDimensions({
       itemTimeStart: _get(item, keys.itemTimeStartKey),
       itemTimeEnd: _get(item, keys.itemTimeEndKey),
@@ -438,30 +443,25 @@ state
 
     if (dimension) {
       dimension.top = null
-      dimension.order = isDragging
-        ? newGroupOrder
-        : groupOrders[_get(item, keys.itemGroupKey)]
+      dimension.order = isDragging ?
+        { index: newGroupOrder, group: groups[newGroupOrder] } :
+        groupOrders[_get(item, keys.itemGroupKey)]
       dimension.stack = !item.isOverlay
       dimension.height = lineHeight * itemHeightRatio
       dimension.isDragging = isDragging
 
-      memo.push({
+      dimensionItems.push({
         id: itemId,
         dimensions: dimension
       })
     }
-
-    return memo
-  }, [])
-
-  const stackingMethod = stackItems ? stack : nostack
-
+  })
   // Get a new array of groupOrders holding the stacked items
-  const { height, groupHeights, groupTops } = stackingMethod(
+  const { height, groupHeights, groupTops } = stackAll(
     dimensionItems,
     groupOrders,
     lineHeight,
-    groups
+    stackItems
   )
 
   return { dimensionItems, height, groupHeights, groupTops }
@@ -471,47 +471,53 @@ state
  * Get the the canvas area for a given visible time
  * Will shift the start/end of the canvas if the visible time
  * does not fit within the existing
- * @param {number} visibleTimeStart 
- * @param {number} visibleTimeEnd 
- * @param {boolean} forceUpdateDimensions 
- * @param {*} items 
- * @param {*} groups 
- * @param {*} props 
- * @param {*} state 
+ * @param {number} visibleTimeStart
+ * @param {number} visibleTimeEnd
+ * @param {boolean} forceUpdateDimensions
+ * @param {*} items
+ * @param {*} groups
+ * @param {*} props
+ * @param {*} state
  */
 export function calculateScrollCanvas(
-visibleTimeStart,
-visibleTimeEnd,
-forceUpdateDimensions,
-items,
-groups,
-props,
-state) {
+  visibleTimeStart,
+  visibleTimeEnd,
+  forceUpdateDimensions,
+  items,
+  groups,
+  props,
+  state
+) {
   const oldCanvasTimeStart = state.canvasTimeStart
   const oldZoom = state.visibleTimeEnd - state.visibleTimeStart
-
+  const newZoom = visibleTimeEnd - visibleTimeStart
   const newState = { visibleTimeStart, visibleTimeEnd }
 
   // Check if the current canvas covers the new times
   const canKeepCanvas =
+    newZoom === oldZoom &&
     visibleTimeStart >= oldCanvasTimeStart + oldZoom * 0.5 &&
     visibleTimeStart <= oldCanvasTimeStart + oldZoom * 1.5 &&
     visibleTimeEnd >= oldCanvasTimeStart + oldZoom * 1.5 &&
     visibleTimeEnd <= oldCanvasTimeStart + oldZoom * 2.5
-  
+
   if (!canKeepCanvas || forceUpdateDimensions) {
-    newState.canvasTimeStart = visibleTimeStart - (visibleTimeEnd - visibleTimeStart)
+    newState.canvasTimeStart =
+      visibleTimeStart - (visibleTimeEnd - visibleTimeStart)
     // The canvas cannot be kept, so calculate the new items position
-    Object.assign(newState, stackItems(
-      items,
-      groups,
-      newState.canvasTimeStart,
-      visibleTimeStart,
-      visibleTimeEnd,
-      state.width,
-      props,
-      state
-    ))
+    Object.assign(
+      newState,
+      stackItems(
+        items,
+        groups,
+        newState.canvasTimeStart,
+        visibleTimeStart,
+        visibleTimeEnd,
+        state.width,
+        props,
+        state
+      )
+    )
   }
   return newState
 }

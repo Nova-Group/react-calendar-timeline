@@ -21,6 +21,11 @@ class CustomMarker extends React.Component {
   static defaultProps = {
     renderer: defaultCustomMarkerRenderer
   }
+
+  shouldComponentUpdate(nextProps){
+    return (nextProps.leftOffset !== this.props.leftOffset || nextProps.date !== this.props.date)
+  }
+
   render() {
     const { date } = this.props
     const leftOffset = this.props.getLeftOffsetFromDate(date)

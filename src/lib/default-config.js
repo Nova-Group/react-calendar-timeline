@@ -3,6 +3,7 @@ export const defaultKeys = {
   groupTitleKey: 'title',
   groupRightTitleKey: 'rightTitle',
   itemIdKey: 'id',
+  itemNameKey: 'name',
   itemTitleKey: 'title',
   itemDivTitleKey: 'title',
   itemGroupKey: 'group',

@@ -35,6 +35,10 @@ class CustomMarker extends React.Component {
     }
   }
 
+  shouldComponentUpdate(nextProps){
+    return (nextProps.date !== this.props.date)
+  }
+
   render() {
     return null
   }

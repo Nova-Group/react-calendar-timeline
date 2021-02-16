@@ -59,6 +59,10 @@ class CursorMarker extends React.Component {
     }
   }
 
+  shouldComponentUpdate(_, nextState){
+    return (nextState.date !== this.state.date || nextState.leftOffset !== this.state.leftOffset)
+  }
+
   render() {
     const { isShowingCursor, leftOffset, date } = this.state
 

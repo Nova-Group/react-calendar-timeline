@@ -4,7 +4,7 @@ import Item from './Item'
 // import ItemGroup from './ItemGroup'
 
 import { _get, arraysEqual, keyBy } from '../utility/generic'
-import { getGroupOrders, getVisibleItems } from '../utility/calendar'
+import { getGroupOrders } from '../utility/calendar'
 
 const canResizeLeft = (item, canResize) => {
   const value =
@@ -54,7 +54,8 @@ export default class Items extends Component {
     dimensionItems: PropTypes.array,
     topOffset: PropTypes.number,
     groupTops: PropTypes.array,
-    useResizeHandle: PropTypes.bool
+    useResizeHandle: PropTypes.bool,
+    scrollRef: PropTypes.object
   }
 
   static defaultProps = {
@@ -63,8 +64,7 @@ export default class Items extends Component {
 
   shouldComponentUpdate(nextProps) {
     return !(
-      arraysEqual(nextProps.groups, this.props.groups) &&
-      arraysEqual(nextProps.items, this.props.items) &&
+      // arraysEqual(nextProps.groups, this.props.groups, 'Items.groups') &&
       nextProps.keys === this.props.keys &&
       nextProps.canvasTimeStart === this.props.canvasTimeStart &&
       nextProps.canvasTimeEnd === this.props.canvasTimeEnd &&
@@ -77,15 +77,12 @@ export default class Items extends Component {
       nextProps.canMove === this.props.canMove &&
       nextProps.canResize === this.props.canResize &&
       nextProps.canSelect === this.props.canSelect &&
-      nextProps.dimensionItems === this.props.dimensionItems &&
-      nextProps.topOffset === this.props.topOffset
+      nextProps.topOffset === this.props.topOffset &&
+      nextProps.newGroupOrder === this.props.newGroupOrder &&
+      nextProps.dragTime === this.props.dragTime
+      // arraysEqual(nextProps.items, this.props.items, 'Items.items') &&
+      && arraysEqual(nextProps.dimensionItems, this.props.dimensionItems)
     )
-  }
-
-  getGroupOrders() {
-    const { keys, groups } = this.props
-
-    return getGroupOrders(groups, keys)
   }
 
   isSelected(item, itemIdKey) {
@@ -97,31 +94,22 @@ export default class Items extends Component {
     }
   }
 
-  getVisibleItems(canvasTimeStart, canvasTimeEnd) {
-    const { keys, items } = this.props
-
-    return getVisibleItems(items, canvasTimeStart, canvasTimeEnd, keys)
-  }
-
   render() {
     const {
-      canvasTimeStart,
-      canvasTimeEnd,
       dimensionItems,
+      items,
+      groups,
+      keys
     } = this.props
-    const { itemIdKey, itemGroupKey } = this.props.keys
+    const { itemIdKey, itemGroupKey } = keys
 
-    const groupOrders = this.getGroupOrders()
-    const visibleItems = this.getVisibleItems(
-      canvasTimeStart,
-      canvasTimeEnd,
-      groupOrders
-    )
+    const groupOrders = getGroupOrders(groups, keys)
+
     const sortedDimensionItems = keyBy(dimensionItems, 'id')
 
     return (
       <div className="rct-items">
-        {visibleItems
+        {items
           .filter(item => sortedDimensionItems[_get(item, itemIdKey)])
           .map(item => (
             <Item
@@ -167,6 +155,7 @@ export default class Items extends Component {
               onContextMenu={this.props.onItemContextMenu}
               onSelect={this.props.itemSelect}
               itemRenderer={this.props.itemRenderer}
+              scrollRef={this.props.scrollRef}
             />
           ))}
       </div>

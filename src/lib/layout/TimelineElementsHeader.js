@@ -30,12 +30,6 @@ export default class TimelineElementsHeader extends Component {
     }
   }
 
-  handleHeaderMouseDown(evt) {
-    //dont bubble so that we prevent our scroll component
-    //from knowing about it
-    evt.stopPropagation()
-  }
-
   headerLabel(time, unit, width) {
     const { headerLabelFormats: f } = this.props
 
@@ -95,16 +89,16 @@ export default class TimelineElementsHeader extends Component {
   }
 
   shouldComponentUpdate(nextProps) {
-    const willUpate =
-      nextProps.canvasTimeStart != this.props.canvasTimeStart ||
-      nextProps.canvasTimeEnd != this.props.canvasTimeEnd ||
-      nextProps.width != this.props.width ||
-      nextProps.canvasWidth != this.props.canvasWidth ||
-      nextProps.subHeaderLabelFormats != this.props.subHeaderLabelFormats ||
-      nextProps.headerLabelFormats != this.props.headerLabelFormats ||
-      nextProps.hasRightSidebar != this.props.hasRightSidebar
-
-    return willUpate
+    return (
+      nextProps.canvasTimeStart !== this.props.canvasTimeStart ||
+      nextProps.canvasTimeEnd !== this.props.canvasTimeEnd ||
+      nextProps.width !== this.props.width ||
+      nextProps.canvasWidth !== this.props.canvasWidth ||
+      nextProps.subHeaderLabelFormats !== this.props.subHeaderLabelFormats ||
+      nextProps.headerLabelFormats !== this.props.headerLabelFormats ||
+      nextProps.hasRightSidebar !== this.props.hasRightSidebar ||
+      nextProps.minUnit !== this.props.minUnit
+    )
   }
 
   render() {
@@ -225,20 +219,19 @@ export default class TimelineElementsHeader extends Component {
         key="header"
         data-testid="header"
         className="rct-header"
-        onMouseDown={this.handleHeaderMouseDown}
         onTouchStart={this.touchStart}
         onTouchEnd={this.touchEnd}
         style={headerStyle}
         ref={this.props.scrollHeaderRef}
       >
         <div
-          className="top-header"
+          className="rct-top-header"
           style={{ height: twoHeaders ? headerLabelGroupHeight : 0, width: canvasWidth }}
         >
           {topHeaderLabels}
         </div>
         <div
-          className="bottom-header"
+          className="rct-bottom-header"
           style={{ height: headerLabelHeight, width: canvasWidth }}
         >
           {bottomHeaderLabels}
