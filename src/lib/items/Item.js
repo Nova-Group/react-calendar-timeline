@@ -242,6 +242,14 @@ export default class Item extends Component {
             dragTime: this.itemTimeStart,
             dragGroupDelta: 0
           })
+          if (this.props.onDrag) {
+            this.props.onDrag(
+              this.itemId,
+              this.itemTimeStart,
+              this.props.order.index,
+              this.props.item
+            )
+          }
         } else {
           return false
         }
@@ -335,6 +343,10 @@ export default class Item extends Component {
             resizeStart: e.pageX,
             resizeTime: 0
           })
+
+          if (this.props.onResizing) {
+            this.props.onResizing(this.itemId, 0, null)
+          }
         } else {
           return false
         }
