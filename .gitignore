@@ -8,6 +8,7 @@ modules
 build
 gh-pages
 /lib
+/style.css
 
 # vscode stuff
 .vscode
