@@ -465,12 +465,18 @@ export default class ReactCalendarTimeline extends Component {
       groupHeights,
       groupTops,
     })
-        this.state,
-      ),
+    this.scrollComponent.scrollLeft = width
     this.headerRef.scrollLeft = width
   }
 
+  onScroll = (scrollX) => {
+    const width = this.state.width
+    let newScrollX = scrollX
+
+    // move the virtual canvas if needed
+    // if scrollX is less...i dont know how to explain the logic here
     if (newScrollX < width * 0.5) {
+      newScrollX += width
     }
     if (newScrollX > width * 1.5) {
       newScrollX -= width
@@ -798,12 +804,15 @@ export default class ReactCalendarTimeline extends Component {
     zoom,
     canvasTimeEnd,
     canvasWidth,
-        this.state,
-      ),
+    minUnit,
+    dimensionItems,
     groupHeights,
     groupTops,
   ) {
+    return (
+      <Items
         canvasTimeStart={canvasTimeStart}
+        canvasTimeEnd={canvasTimeEnd}
         canvasWidth={canvasWidth}
         dimensionItems={dimensionItems}
         groupTops={groupTops}
