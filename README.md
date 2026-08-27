@@ -2,7 +2,9 @@
 
 This repository is a fork of [namespace-ee/react-calendar-timeline](https://github.com/namespace-ee/react-calendar-timeline)
 
-Features, documentation and tests here may be significantly out of date compared to the forked from repository. Check forked from repository before using this.
+We use the `release` branch as the main landing point for all of our custom fork code. `master` branch should be used for tracking against upstream.
+
+Features, documentation and tests here may be significantly out of date compared to the upstream repository. Check upstream repository before using this.
 
 # React Calendar Timeline
 
