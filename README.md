@@ -25,7 +25,7 @@ At the very minimum:
 ```jsx
 import Timeline from 'react-calendar-timeline'
 // make sure you include the timeline stylesheet or the timeline will not be styled
-import 'react-calendar-timeline/lib/Timeline.css'
+import 'react-calendar-timeline/style.css'
 import moment from 'moment'
 
 const groups = [{ id: 1, title: 'group 1' }, { id: 2, title: 'group 2' }]
@@ -772,7 +772,7 @@ Custom renderer for this marker. Ensure that you always pass `styles` to the roo
 
 ## My timeline is unstyled
 
-You need to include the `Timeline.css` file, either via static file reference or webpack stylesheet bundling. The file is located at `lib/Timeline.css`
+You need to include the `style.css` file, either via static file reference or webpack stylesheet bundling.
 
 ## How can I have items with different colors?
 
