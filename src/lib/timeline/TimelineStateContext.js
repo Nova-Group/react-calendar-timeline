@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import createReactContext from 'create-react-context'
 import {
   calculateXPositionForTime,
-  calculateTimeForXPosition,
+  calculateTimeForXPosition
 } from '../utility/calendar'
 
 /* this context will hold all information regarding timeline state:
@@ -23,7 +23,7 @@ const defaultContextState = {
   },
   getDateFromLeftOffsetPosition: () => {
     console.warn('"getDateFromLeftOffsetPosition" default func is being used')
-  },
+  }
 }
 /* eslint-enable */
 
@@ -37,9 +37,7 @@ export class TimelineStateProvider extends React.Component {
     visibleTimeEnd: PropTypes.number.isRequired,
     canvasTimeStart: PropTypes.number.isRequired,
     canvasTimeEnd: PropTypes.number.isRequired,
-    canvasWidth: PropTypes.number.isRequired,
-    timelineWidth: PropTypes.number,
-    visibleWidth: PropTypes.number,
+    canvasWidth: PropTypes.number.isRequired
   }
 
   constructor(props) {
@@ -49,48 +47,32 @@ export class TimelineStateProvider extends React.Component {
       timelineContext: {
         getTimelineState: this.getTimelineState,
         getLeftOffsetFromDate: this.getLeftOffsetFromDate,
-        getDateFromLeftOffsetPosition: this.getDateFromLeftOffsetPosition,
-      },
+        getDateFromLeftOffsetPosition: this.getDateFromLeftOffsetPosition
+      }
     }
   }
 
   getTimelineState = () => {
-    const {
-      timelineWidth,
-      visibleWidth,
-      visibleTimeStart,
-      visibleTimeEnd,
-      canvasTimeStart,
-      canvasTimeEnd,
-    } = this.props
-
-    return {
-      timelineWidth:
-        typeof timelineWidth === 'number' ? timelineWidth : visibleWidth,
-      visibleTimeStart,
-      visibleTimeEnd,
-      canvasTimeStart,
-      canvasTimeEnd,
-    }
+    return this.state.timelineState // REVIEW: return copy or object.freeze?
   }
 
-  getLeftOffsetFromDate = (date) => {
+  getLeftOffsetFromDate = date => {
     const { canvasTimeStart, canvasTimeEnd, canvasWidth } = this.props
     return calculateXPositionForTime(
       canvasTimeStart,
       canvasTimeEnd,
       canvasWidth,
-      date,
+      date
     )
   }
 
-  getDateFromLeftOffsetPosition = (leftOffset) => {
+  getDateFromLeftOffsetPosition = leftOffset => {
     const { canvasTimeStart, canvasTimeEnd, canvasWidth } = this.props
     return calculateTimeForXPosition(
       canvasTimeStart,
       canvasTimeEnd,
       canvasWidth,
-      leftOffset,
+      leftOffset
     )
   }
 
