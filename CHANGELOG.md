@@ -26,6 +26,7 @@ and this project adheres (more or less) to [Semantic Versioning](http://semver.o
 
 ### improvements
 * eliminate extra renders on every scroll - #357 [acemac](https://github.com/acemac)
+* minimal fixes needed to support React 19 [brendanjurd-novasystems](https://github.com/brendanjurd-novasystems)
 
 ### Fixed
 * When the `date` prop on a `CustomMarker` changes the marker will now move on the timeline - #421 [kevinmanncito](https://github.com/kevinmanncito) [ilaiwi](https://github.com/ilaiwi)
