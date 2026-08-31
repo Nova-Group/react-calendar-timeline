@@ -794,7 +794,7 @@ Custom renderer for this marker. Ensure that you always pass `styles` to the roo
 
 ## My timeline is unstyled
 
-You need to include the `style.css` file, either via static file reference or webpack stylesheet bundling.
+You need to include the `Timeline.css` file, either via static file reference or webpack stylesheet bundling.
 
 ## How can I have items with different colors?
 
