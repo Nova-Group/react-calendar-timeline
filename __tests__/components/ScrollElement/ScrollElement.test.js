@@ -12,6 +12,7 @@ const defaultProps = {
   traditionalZoom: false,
   scrollRef: noop,
   isInteractingWithItem: false,
+  isItemSelected: false,
   onMouseLeave: noop,
   onMouseMove: noop,
   onMouseEnter: noop,
@@ -25,6 +26,55 @@ const createMouseEvent = pageX => ({
 })
 
 const scrollElementSelector = sel('scroll-element')
+
+describe('ScrollElement pan gesture origin', () => {
+  let wrapper
+
+  beforeEach(() => {
+    wrapper = mount(
+      <ScrollElement {...defaultProps} isItemSelected>
+        <div>
+          <div data-rct-item-selected="true"><span>Selected item</span></div>
+        </div>
+      </ScrollElement>
+    )
+    wrapper.instance().scrollComponent.scrollLeft = 300
+  })
+
+  afterEach(() => wrapper.unmount())
+
+  it('pans immediately on the canvas while an item is selected', () => {
+    wrapper.find(scrollElementSelector)
+      .simulate('mousedown', createMouseEvent(100))
+      .simulate('mousemove', createMouseEvent(150))
+    expect(wrapper.instance().scrollComponent.scrollLeft).toBe(250)
+  })
+
+  it('does not start panning from selected item content before item dragging activates', () => {
+    const target = wrapper.find('span').getDOMNode()
+    wrapper.find(scrollElementSelector)
+      .simulate('mousedown', { ...createMouseEvent(100), target })
+      .simulate('mousemove', createMouseEvent(150))
+    expect(wrapper.instance().scrollComponent.scrollLeft).toBe(300)
+    expect(wrapper.state('isDragging')).toBe(false)
+  })
+
+  it('does not pan during an active item drag or resize', () => {
+    wrapper.setProps({ isInteractingWithItem: true })
+    wrapper.find(scrollElementSelector)
+      .simulate('mousedown', createMouseEvent(100))
+      .simulate('mousemove', createMouseEvent(150))
+    expect(wrapper.instance().scrollComponent.scrollLeft).toBe(300)
+  })
+
+  it('ends canvas panning on mouse release', () => {
+    wrapper.find(scrollElementSelector)
+      .simulate('mousedown', createMouseEvent(100))
+      .simulate('mouseup')
+      .simulate('mousemove', createMouseEvent(150))
+    expect(wrapper.instance().scrollComponent.scrollLeft).toBe(300)
+  })
+})
 
 xdescribe('ScrollElement', () => {
   describe('mouse event delegates', () => {

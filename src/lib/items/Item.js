@@ -566,6 +566,7 @@ export default class Item extends Component {
       title,
       name,
       className: classNames + ` ${props.className ? props.className : ''}`,
+      'data-rct-item-selected': this.props.selected ? 'true' : undefined,
       onMouseDown: composeEvents(this.onMouseDown, props.onMouseDown),
       onMouseUp: composeEvents(this.onMouseUp, props.onMouseUp),
       onTouchStart: composeEvents(this.onTouchStart, props.onTouchStart),
