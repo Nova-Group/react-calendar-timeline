@@ -12,7 +12,6 @@ const defaultProps = {
   traditionalZoom: false,
   scrollRef: noop,
   isInteractingWithItem: false,
-  isItemSelected: false,
   onMouseLeave: noop,
   onMouseMove: noop,
   onMouseEnter: noop,
@@ -32,7 +31,7 @@ describe('ScrollElement pan gesture origin', () => {
 
   beforeEach(() => {
     wrapper = mount(
-      <ScrollElement {...defaultProps} isItemSelected>
+      <ScrollElement {...defaultProps}>
         <div>
           <div data-rct-item-selected="true"><span>Selected item</span></div>
         </div>

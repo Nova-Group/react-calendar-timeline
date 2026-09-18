@@ -10,7 +10,6 @@ class ScrollElement extends Component {
     traditionalZoom: PropTypes.bool.isRequired,
     scrollRef: PropTypes.func.isRequired,
     isInteractingWithItem: PropTypes.bool.isRequired,
-    isItemSelected: PropTypes.bool.isRequired,
     onZoom: PropTypes.func.isRequired,
     onWheelZoom: PropTypes.func.isRequired,
     onScroll: PropTypes.func.isRequired
