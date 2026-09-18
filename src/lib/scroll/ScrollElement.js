@@ -10,7 +10,6 @@ class ScrollElement extends Component {
     traditionalZoom: PropTypes.bool.isRequired,
     scrollRef: PropTypes.func.isRequired,
     isInteractingWithItem: PropTypes.bool.isRequired,
-    isItemSelected: PropTypes.bool.isRequired,
     onZoom: PropTypes.func.isRequired,
     onWheelZoom: PropTypes.func.isRequired,
     onScroll: PropTypes.func.isRequired
@@ -20,9 +19,7 @@ class ScrollElement extends Component {
     super()
     this.state = {
       isDragging: false,
-      startDragMs: null,
     }
-    this.dragDelayMs = 500; // 500 ms delay
   }
 
   componentDidMount(){
@@ -60,7 +57,8 @@ class ScrollElement extends Component {
   }
 
   handleMouseDown = e => {
-    if(this.props.isInteractingWithItem) {
+    if (this.props.isInteractingWithItem ||
+        (e.target instanceof Element && e.target.closest('[data-rct-item-selected="true"]'))) {
       return;
     }
 
@@ -69,22 +67,12 @@ class ScrollElement extends Component {
       this.dragLastPosition = e.pageX
       this.setState({
         isDragging: true,
-        startDragMs: (new Date()).valueOf(),
       })
     }
   }
 
   handleMouseMove = e => {
-    //why is interacting with item important?
     if (this.state.isDragging && !this.props.isInteractingWithItem) {
-      if (this.props.isItemSelected) {
-        const msNow = (new Date()).valueOf();
-        const elapsedMs = msNow - this.state.startDragMs;
-        if(elapsedMs < this.dragDelayMs) {
-          return;
-        }
-      }
-
       this.scrollComponent.scrollLeft += this.dragLastPosition - e.pageX
       this.dragLastPosition = e.pageX
     }
@@ -96,7 +84,6 @@ class ScrollElement extends Component {
 
     this.setState({
       isDragging: false,
-      startDragMs: null,
     })
   }
 
@@ -106,7 +93,6 @@ class ScrollElement extends Component {
     this.dragLastPosition = null
     this.setState({
       isDragging: false,
-      startDragMs: null,
     })
   }
 
