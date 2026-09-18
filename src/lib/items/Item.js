@@ -52,6 +52,7 @@ export default class Item extends Component {
     itemProps: PropTypes.object,
     canSelect: PropTypes.bool,
     topOffset: PropTypes.number,
+    scrollRef: PropTypes.object,
     dimensions: PropTypes.object,
     groupTops: PropTypes.array,
     useResizeHandle: PropTypes.bool,
@@ -149,16 +150,21 @@ export default class Item extends Component {
   }
 
   dragGroupDelta(e) {
-    const { groupTops, order, topOffset } = this.props
+    const { groupTops, order, topOffset, scrollRef } = this.props
     if (this.state.dragging) {
       if (!this.props.canChangeGroup) {
         return 0
       }
+      const canvasTop = scrollRef
+        ? scrollRef.getBoundingClientRect().top + window.pageYOffset +
+          scrollRef.clientTop - scrollRef.scrollTop
+        : topOffset
+      const pointerTop = e.pageY - canvasTop
       let groupDelta = 0
 
       for (var key of Object.keys(groupTops)) {
         var groupTop = groupTops[key]
-        if (e.pageY - topOffset > groupTop) {
+        if (pointerTop > groupTop) {
           groupDelta = parseInt(key, 10) - order.index
         } else {
           break
